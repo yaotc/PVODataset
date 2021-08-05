@@ -71,7 +71,7 @@ class demo_K_PV(PVODataset):
 
     def plot_kpv(self, K_pv, tmp_time, start, end):
         
-        fs = 14
+        fs = 18
         lines = [1 for i in range(len(K_pv))]
         plt.figure(figsize=(24,8),dpi=300)
 
@@ -93,7 +93,7 @@ class demo_K_PV(PVODataset):
     def plot_clr(self, power, pltpdc, tmp_time, start, end):
         plt.rc('font',family='Times New Roman')
         plt.figure(figsize=(24,8),dpi=300)
-        fs = 14
+        fs = 18
         line0, = plt.plot(power, color='#D94E5D', linestyle='-')
         line1, = plt.plot(pltpdc, color='blue', linestyle='--')
 
@@ -102,9 +102,9 @@ class demo_K_PV(PVODataset):
             rmse = MSE(power[i:right_], pltpdc[i:right_])**0.5
             mae = MAE(power[i:right_], pltpdc[i:right_])
             mape = MAPE(power[i:right_], pltpdc[i:right_])
-            plt.text(i+37, 5, f'MAPE:{round(mape,1)}%')
-            plt.text(i+37, 4, f'RMSE:{round(rmse,1)}')
-            plt.text(i+37, 3, f'MAE :{round(mae ,1)}')
+            plt.text(i+37, 4, f'MAPE: {round(mape,1)}%', size = fs-4)
+            plt.text(i+37, 3, f'RMSE: {round(rmse,1)}',  size = fs-4)
+            plt.text(i+37, 2, f'MAE  :{round(mae ,1)}',  size = fs-4)
 
         plt.grid(ls='--')
         plt.xlim(start, end)
