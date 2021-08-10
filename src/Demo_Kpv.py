@@ -8,6 +8,9 @@ from sklearn import metrics
 from sklearn.metrics import mean_squared_error as MSE
 from sklearn.metrics import mean_absolute_error as MAE
 from pvlib import pvsystem 
+import datetime
+from pysolar.solar import radiation, get_altitude
+import pytz
 
 from pvodataset import PVODataset
 
@@ -34,7 +37,7 @@ class demo_K_PV(PVODataset):
     
     def init_PV_sys(self):
 
-        module_parameters = {'pdc0': 32, 'gamma_pdc': -0.004}
+        module_parameters = {'pdc0': 30, 'gamma_pdc': -0.005}
         inverters = pvsystem.retrieve_sam('cecinverter')
         inverter_parameters = inverters['ABB__MICRO_0_25_I_OUTD_US_208__208V_']
         system = pvsystem.PVSystem(module_parameters=module_parameters,
@@ -47,10 +50,23 @@ class demo_K_PV(PVODataset):
         pdc = system.pvwatts_dc(g_poa_effective=irra_poa, temp_cell=temp_cell)
         return pdc
     
+    def get_dir_rad(self, date):
+        """
+        Clear-sky model.
+        """
+        date = datetime.datetime.strptime(str(date), "%Y-%m-%d %H:%M")
+        longitude_deg, latitude_deg = 114.1236, 38.2355 # s5
+        date = datetime.datetime(date.year, date.month, date.day, \
+                                 date.hour, date.minute, tzinfo=pytz.timezone('Asia/Shanghai'))
+        altitude_deg = get_altitude(latitude_deg, longitude_deg, date)
+        
+        irr = radiation.get_radiation_direct(date, altitude_deg)
+#         print(altitude_deg, irr)
+        return irr
+
     # users-defined demo1
     def range_calc_KPV(self, ori_data, start, end):
         power = ori_data["power"][start:end]
-        irra_poa = ori_data["lmd_totalirrad"][start:end]
         temp_cell = ori_data["lmd_temperature"][start:end]
         datet = ori_data["date_time"][start:end]
         datet = [str(i)[:-3] for i in datet]
@@ -59,9 +75,9 @@ class demo_K_PV(PVODataset):
         system = self.init_PV_sys()
         K_pv, pltpdc= [], []
         for i in range(start, end):
-            pdc = self.calc_PV_clr(irra_poa[i],temp_cell[i], system)
+            pdc = self.calc_PV_clr(self.get_dir_rad(datet[i]),temp_cell[i], system)
             pltpdc.append(pdc)
-            if pdc == 0:
+            if pdc < 1:
                 K_pv.append(0)
             else:
                 K_pv.append(power[i]/pdc)
@@ -71,7 +87,7 @@ class demo_K_PV(PVODataset):
 
     def plot_kpv(self, K_pv, tmp_time, start, end):
         
-        fs = 18
+        fs = 14
         lines = [1 for i in range(len(K_pv))]
         plt.figure(figsize=(24,8),dpi=300)
 
@@ -93,18 +109,18 @@ class demo_K_PV(PVODataset):
     def plot_clr(self, power, pltpdc, tmp_time, start, end):
         plt.rc('font',family='Times New Roman')
         plt.figure(figsize=(24,8),dpi=300)
-        fs = 18
+        fs = 14
         line0, = plt.plot(power, color='#D94E5D', linestyle='-')
         line1, = plt.plot(pltpdc, color='blue', linestyle='--')
 
-        for i in list(range(start, end-96, 96)):
-            right_ = i + 96 if i+96 <= end else end
-            rmse = MSE(power[i:right_], pltpdc[i:right_])**0.5
-            mae = MAE(power[i:right_], pltpdc[i:right_])
-            mape = MAPE(power[i:right_], pltpdc[i:right_])
-            plt.text(i+37, 4, f'MAPE: {round(mape,1)}%', size = fs-4)
-            plt.text(i+37, 3, f'RMSE: {round(rmse,1)}',  size = fs-4)
-            plt.text(i+37, 2, f'MAE  :{round(mae ,1)}',  size = fs-4)
+#         for i in list(range(start, end-96, 96)):
+#             right_ = i + 96 if i+96 <= end else end
+#             rmse = MSE(power[i:right_], pltpdc[i:right_])**0.5
+#             mae = MAE(power[i:right_], pltpdc[i:right_])
+#             mape = MAPE(power[i:right_], pltpdc[i:right_])
+#             plt.text(i+37, 4, f'MAPE: {round(mape,1)}%', size = fs-4)
+#             plt.text(i+37, 3, f'RMSE: {round(rmse,1)}',  size = fs-4)
+#             plt.text(i+37, 2, f'MAE  :{round(mae ,1)}',  size = fs-4)
 
         plt.grid(ls='--')
         plt.xlim(start, end)
