@@ -2,13 +2,21 @@ import pandas as pd
 import os
 import numpy as np
 import math
+from utils import str_2_utc, pk_2_utc, utc_2_pk
+
 
 class PVODataset(object):
-    def __init__(self, path='../datasets/'):
+    def __init__(self, path='../datasets/', timezone="UTC", qc=False):
         self.path = path
         self.metadata = self.read_metadata()
 #         print("Welcome to PVODataset (PVOD). The PVOD was constructed from 10 PV stations in Hebei, China, with 7 features of Numerical Weather Prediction (NWP), 5 features ofLocal measurements data (LMD), and PV output (Power). The PVOD has 271968 records over 1 year. Enjoy.")
+        self.tz = timezone
+        self.qc_flag = qc
+        if self.tz not in ["UTC", "UTC+8"]:
+                raise ValueError("Check Timezone.")
         print("Welcome to PVODataset (PVOD).")
+        if self.qc_flag:
+            print("Quality control is set to True.")
 
     
     def show_files(self):
@@ -17,9 +25,40 @@ class PVODataset(object):
     def read_metadata(self):
         metadata = pd.read_csv(self.path + "metadata.csv")
         return metadata
-
+    
+    def utc_2_pk_pvod(self, data):
+        data["date_time"] = data["date_time"].map(lambda x: utc_2_pk(str(x)))
+        return data
+    
+    # QC funcs
+    def qc_steps(self, ori_data):
+        # 'phy' 
+        E_0n = 1367
+        Z = 33 
+        ori_data = ori_data.loc[ (ori_data['lmd_totalirrad'] >= -4) & \
+                           (ori_data['lmd_totalirrad'] <= 1.5 * ori_data['lmd_diffuseirrad'] * math.cos(math.radians(Z))**1.2 + 100) &\
+                    (ori_data['lmd_diffuseirrad'] >= -4) &\
+                     (ori_data['lmd_diffuseirrad'] <= 0.95 * ori_data['lmd_diffuseirrad'] * math.cos(math.radians(Z))**1.2 + 50)]
+        #  'ext' 
+        ori_data = ori_data.loc[ (ori_data['lmd_totalirrad'] > -4) & \
+                           (ori_data['lmd_totalirrad'] < 1.5 * 1361  * math.cos(math.radians(Z))**1.2 + 100) &\
+                    (ori_data['lmd_diffuseirrad'] > -4) &\
+                     (ori_data['lmd_diffuseirrad'] < 0.95 * 1361  * math.cos(math.radians(Z))**1.2 + 50)]
+        #  'closr' 
+        ori_data = ori_data.loc[ (ori_data['lmd_totalirrad'] > 50) ]
+        return ori_data
+    
     def read_ori_data(self, station_id):
-        ori_data = pd.read_csv(self.path + self.metadata["Station_ID"][station_id] + '.csv', parse_dates=[['date', 'time']])
+        """
+        timezone : "UTC" or "UTC+8"(Asian/Shanghai)
+        """
+        ori_data = pd.read_csv(self.path + self.metadata["Station_ID"][station_id] + '.csv')
+        if self.tz == "UTC+8":
+            ori_data = self.utc_2_pk_pvod(ori_data)
+        if self.tz == "UTC":
+            ori_data["date_time"] = ori_data["date_time"].map(lambda x: str_2_utc(x))
+        if self.qc_flag:
+            ori_data = self.qc_steps(ori_data)
         return ori_data
     
     # Show abstract information
@@ -47,8 +86,14 @@ class PVODataset(object):
         input : station_id (int), start_date (Timestamp), end_date (Timestamp)
         output: select_data (DataFrame)
         """
-        #  pd.set_option('display.max_columns', 9)
+        pd.set_option('display.max_columns', 9)
         ori_data = self.read_ori_data(station_id)
+        if self.tz == "UTC+8":
+            start_date = pd.to_datetime(start_date, utc=False).tz_localize('Asia/Shanghai')
+            end_date   = pd.to_datetime(end_date  , utc=False).tz_localize('Asia/Shanghai')
+        else:
+            start_date = pd.to_datetime(start_date, utc=False).tz_localize('UTC')
+            end_date   = pd.to_datetime(end_date  , utc=False).tz_localize('UTC')
         select_date_id = ori_data.loc[ (ori_data['date_time'] >= start_date) & (ori_data['date_time'] <= end_date)]
         return select_date_id
 
@@ -90,17 +135,7 @@ class PVODataset(object):
         else:
             pass
               
-    #  User-Defined Functions for metadata (Demo)
-    def UDF(self, station_id, param0, param1):
-        """
-        Example:
-        input  : param0=size (square meter, float),param1=number (int).
-        output : area (square meter, folat).
-        """
-        meta_id = self.metadata.loc[station_id]
-        value0, value1 = meta_id[param0], meta_id[param1]
-        area = value0 * value1
-        return area
+
               
 
 class QCfunc(object):
@@ -161,3 +196,6 @@ class UDFClass(PVODataset):
     # users-defined demo1
     def get_id_metedata(self, station_id):
         return self.metadata.loc[station_id]
+              
+              
+              
