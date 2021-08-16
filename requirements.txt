@@ -1,0 +1,5 @@
+numpy==1.18.4
+pandas==1.1.3
+pvlib==0.8.1
+pysolar==0.9
+pytz==2018.9
