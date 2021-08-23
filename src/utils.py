@@ -30,13 +30,32 @@ def utc_2_pk(utctime_str:str)->datetime:
 
 
 
-
 def MAPE(y, pred):
     y = np.array(y)
     pred = np.array(pred)
     ans = []
     for i,j in enumerate(y):
-        if y[i] and pred[i]:
+        if pred[i] is np.NaN:
+            print("keke")
+    for i,j in enumerate(y):
+        if y[i] and pred[i] and not np.isnan(pred[i]):
             ans.append(np.abs(y[i] - pred[i])/ y[i])
     return np.sum(ans)/ len(ans) * 100
 
+def RMSE(y, pred):
+    y = np.array(y)
+    pred = np.array(pred)
+    ans = []
+    for i,j in enumerate(y):
+        if not np.isnan(pred[i]):
+            ans.append(np.abs(y[i] - pred[i])**2)
+    return np.sqrt(np.sum(ans)/ len(ans))
+
+def MAE(y, pred):
+    y = np.array(y)
+    pred = np.array(pred)
+    ans = []
+    for i,j in enumerate(y):
+        if not np.isnan(pred[i]):
+            ans.append(np.abs(y[i] - pred[i]))
+    return np.sum(ans)/ len(ans) 
