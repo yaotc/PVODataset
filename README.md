@@ -8,7 +8,7 @@ PVOD has total 271,968 records and is constructed from two data sources with a 1
 - Local Measurements Data includes 7 features, i.e., global irradiance, diffuse irradiance, temperature, pressure, wind direction, wind speed, and photovoltaic output records.
 
 
-# Installation
+# Requirements
 
 numpy==1.18.4
 
