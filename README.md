@@ -33,5 +33,4 @@ Email: yaotiechui@gmail.com
 
 # License
 
-BSD 3-clause.
-
+MIT License.
