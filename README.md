@@ -1,6 +1,6 @@
 # POVDataset
 
----
+
 
 PVOD has total 271,968 records and is constructed from two data sources with a 15-min interval, namely, Numerical Weather Prediction (NWP) from meteorological service and Local Measurements Data (LMD) from PV power stations. 
 
@@ -9,7 +9,6 @@ PVOD has total 271,968 records and is constructed from two data sources with a 1
 
 
 # Installation
----
 
 numpy==1.18.4
 
@@ -23,7 +22,6 @@ pytz==2018.9
 
 
 # Citing
----
 
 TBD
 
@@ -34,7 +32,6 @@ If you have any questions relate to PVOD and code, please let us know.
 Email: yaotiechui@gmail.com
 
 # License
----
 
 BSD 3-clause.
 
