@@ -136,7 +136,7 @@ class demo_K_PV(PVODataset):
         plt.xticks(size = fs)
         plt.ylabel('K$_{PV}$',fontsize=fs)
         plt.xlabel('Time step (15-min)',fontsize=fs)
-        plt.savefig("./Kpv_S7_cloudy.pdf", bbox_inches='tight',format='pdf')
+        # plt.savefig("./Kpv_S7_cloudy.pdf", bbox_inches='tight',format='pdf')
         plt.show()
 
     def plot_clr(self, power, pltac, tmp_time, start, end):
@@ -164,5 +164,5 @@ class demo_K_PV(PVODataset):
         plt.xticks(list(range(start, end, 96)), tmp_time)
         plt.ylabel('Power (MW)',fontsize=fs)
         plt.xlabel('Time step (15-min)',fontsize=fs)
-        plt.savefig('./CSI_S7_cloudy.pdf', bbox_inches='tight',format='pdf')
+        # plt.savefig('./CSI_S7_cloudy.pdf', bbox_inches='tight',format='pdf')
         plt.show()
