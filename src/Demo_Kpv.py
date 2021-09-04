@@ -35,23 +35,13 @@ class demo_K_PV(PVODataset):
         print(self.tz)
         pass
     
-    def init_PV_sys(self):
 
-        module_parameters = {'pdc0': 30, 'gamma_pdc': -0.005}
-        inverters = pvsystem.retrieve_sam('cecinverter')
-        inverter_parameters = inverters['ABB__MICRO_0_25_I_OUTD_US_208__208V_']
-        system = pvsystem.PVSystem(module_parameters=module_parameters,
-                                   inverter_parameters=inverter_parameters,
-                           surface_tilt=33, surface_azimuth=180)
-        return system
-
-        
-    def read_weather(self, path='../datasets/McClear/s5_clr_data.csv'):
+    def read_weather(self, path='../datasets/McClear/s7_clr_data_17-19.csv'):
         """
-        periods = 500 S5.  96( S7,S8)
+        periods = 500 S5.  96 (S7,S8)
         """
         s_clr = pd.read_csv(path)
-        times = pd.date_range('03-04-2018 16:00', freq='15min', periods=500, tz="UTC") #
+        times = pd.date_range('03-16-2018 16:00', freq='15min', periods=96*2, tz="UTC") #
         weather = pd.DataFrame(columns=['ghi', 'dni', 'dhi'], index=times)
         weather['dni'] = np.array(s_clr['BNI'])
         weather['ghi'] = np.array(s_clr['GHI'])
@@ -61,17 +51,18 @@ class demo_K_PV(PVODataset):
     def init_PV_sys(self):
 
         temperature_model_parameters = TEMPERATURE_MODEL_PARAMETERS['sapm']['open_rack_glass_glass']
-        module_parameters = {'pdc0': 119, 'gamma_pdc': -0.005}
-        inverter_parameters = {'pdc0': 119}
+        module_parameters = pvsystem.retrieve_sam('CECMod')['Yingli_Energy__China__YL250P_29b']
+        ivt_para = pvsystem.retrieve_sam('cecinverter')['Advanced_Energy_Industries__Solaron_500kW__3159500_XXXX___480V_']
+        ivt_para["Pdco"], ivt_para['Vdco'], ivt_para["Vdcmax"], ivt_para['Idcmax'], = 567000, 315, 1000, 1134
+        ivt_para["Mppt_low"], ivt_para['Mppt_high'] = 460, 950
+        inverter_parameters = ivt_para
         system = PVSystem(surface_tilt=33, surface_azimuth=180,
                           module_parameters=module_parameters,
                           inverter_parameters=inverter_parameters,
+                          modules_per_string=20, strings_per_inverter=100,
                           temperature_model_parameters=temperature_model_parameters)
         
-        # For this example, we will be using Golden, Colorado
-        lat, lon = 38.2355 , 114.1236 # S5 pdc0 = 119
-#         lat, lon = 36.64403, 113.64187 # S7 pdc0 = 53
-#         lat, lon = 36.70761, 113.89999 # S8 Pdc0 = 56
+        lat, lon = 36.64403, 113.64187 # S7 
         site = location.Location(lat, lon, tz='UTC')
 
         mc = ModelChain(system, site, transposition_model='perez',
@@ -115,24 +106,26 @@ class demo_K_PV(PVODataset):
         tmp_time = [datet[i] for i in list(range(start, end, 96))]
         mc  = self.init_PV_sys()
         K_pv = []
-        all_dc = np.array(mc.dc)
-        for i in range(len(all_dc)):
-            if all_dc[i] < 1:
+        K_pv, pltac= [], []
+        all_ac = np.array(mc.ac)
+        for i in range(len(all_ac)):
+            ac_i = all_ac[i]/1e6*135
+            pltac.append(ac_i)
+            if ac_i <= 1:
                 K_pv.append(0)
             else:
-                K_pv.append(power[i]/all_dc[i])
+                K_pv.append(power[i]/ac_i)
 
-        return K_pv, all_dc, power, tmp_time
+        return K_pv, pltac, power, tmp_time
     
     
     def plot_kpv(self, K_pv, tmp_time, start, end):
-        
-        fs = 12
+        fs = 24
         lines = [1 for i in range(len(K_pv))]
-        plt.figure(figsize=(24,8),dpi=300)
+        plt.figure(figsize=(10,6),dpi=300)
 
         plt.plot(K_pv,  'g-.')
-        # plt.plot(pltpdc, 'b--')
+        # plt.plot(pltac, 'b--')
         plt.plot(lines,  'k--', linewidth=1)
         # 24 h ( 15m resolution) = 24 * 6 = 96 timesteps 
         plt.xticks(list(range(start, end, 96)), tmp_time)
@@ -143,50 +136,21 @@ class demo_K_PV(PVODataset):
         plt.xticks(size = fs)
         plt.ylabel('K$_{PV}$',fontsize=fs)
         plt.xlabel('Time step (15-min)',fontsize=fs)
-#         plt.savefig("./Kpv_S7.pdf", bbox_inches='tight',format='pdf')
+        plt.savefig("./Kpv_S7_cloudy.pdf", bbox_inches='tight',format='pdf')
         plt.show()
 
-
-    def plot_clr(self, power, pltpdc, tmp_time, start, end):
+    def plot_clr(self, power, pltac, tmp_time, start, end):
         plt.rc('font',family='Times New Roman')
-        plt.figure(figsize=(24,8),dpi=300)
-        fs = 12
+        plt.figure(figsize=(10,6),dpi=300)
+        fs = 24
         line0, = plt.plot(power, color='#D94E5D', linestyle='-')
-        line1, = plt.plot(pltpdc, color='blue', linestyle='--')
+        line1, = plt.plot(pltac, color='blue', linestyle='--')
 
         for i in list(range(start, end-96, 96)):
             right_ = i + 96 if i+96 <= end else end
-            rmse = RMSE(power[i:right_], pltpdc[i:right_])**0.5
-            mae = MAE(power[i:right_], pltpdc[i:right_])
-            mape = MAPE(power[i:right_], pltpdc[i:right_])
-            plt.text(i+37, 4, f'MAPE:{round(mape,1)}%', size = fs)
-            plt.text(i+37, 3, f'RMSE:{round(rmse,1)}' , size = fs)
-            plt.text(i+37, 2, f'MAE  :{round(mae ,1)}' , size = fs)
-
-        plt.grid(ls='--')
-        plt.xlim(start, end)
-        plt.yticks(size = fs)
-        plt.xticks(size = fs)
-        plt.legend(handles=[line0, line1], labels=['S7_PV_MEAS','S7_PV_CLR'], loc='upper left',fontsize=fs)
-        plt.xticks(list(range(start, end, 96)), tmp_time)
-        plt.ylabel('Power (W/M$^2$)',fontsize=fs)
-        plt.xlabel('Time step (15-min)',fontsize=fs)
-#         plt.savefig('./CSI_S7.pdf', bbox_inches='tight',format='pdf')
-        plt.show()
-    
-    def plot_clr2(self, power, pltpdc, tmp_time, start, end, pdc2):
-        plt.rc('font',family='Times New Roman')
-        plt.figure(figsize=(24,8),dpi=300)
-        fs = 12
-        line0, = plt.plot(power, color='#D94E5D', linestyle='-')
-        line1, = plt.plot(pltpdc, color='blue', linestyle='--')
-#         line2, = plt.plot(pdc2, color='blue', linestyle='--')
-
-#         for i in list(range(start, end-96, 96)):
-#             right_ = i + 96 if i+96 <= end else end
-#             rmse = RMSE(power[i:right_], pltpdc[i:right_])**0.5
-#             mae = MAE(power[i:right_], pltpdc[i:right_])
-#             mape = MAPE(power[i:right_], pltpdc[i:right_])
+            rmse = RMSE(power[i:right_], pltac[i:right_])
+            mae = MAE(power[i:right_], pltac[i:right_])
+            mape = MAPE(power[i:right_], pltac[i:right_])
 #             plt.text(i+37, 4, f'MAPE:{round(mape,1)}%', size = fs)
 #             plt.text(i+37, 3, f'RMSE:{round(rmse,1)}' , size = fs)
 #             plt.text(i+37, 2, f'MAE  :{round(mae ,1)}' , size = fs)
@@ -195,12 +159,10 @@ class demo_K_PV(PVODataset):
         plt.xlim(start, end)
         plt.yticks(size = fs)
         plt.xticks(size = fs)
-#         plt.legend(handles=[line0, line1, line2], labels=['S8_PV_MEAS','PV_EST', 'S8_PV_CLR'], loc='best',fontsize=fs)
-        plt.legend(handles=[line0, line1], labels=['S8_PV_MEAS','PV_EST'], loc='upper left',fontsize=fs)
-
+        plt.ylim(-1,17)
+        plt.legend(handles=[line0, line1], labels=['PV_MEAS','PV_CLR'], loc='best',fontsize=fs)
         plt.xticks(list(range(start, end, 96)), tmp_time)
-        plt.ylabel('Power (W/M^2)',fontsize=fs)
+        plt.ylabel('Power (MW)',fontsize=fs)
         plt.xlabel('Time step (15-min)',fontsize=fs)
-#         plt.savefig('./CSI_EST.pdf', bbox_inches='tight',format='pdf')
+        plt.savefig('./CSI_S7_cloudy.pdf', bbox_inches='tight',format='pdf')
         plt.show()
-
