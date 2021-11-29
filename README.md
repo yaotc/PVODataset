@@ -30,7 +30,6 @@ Yao, Tiechui, et al. "A photovoltaic power output dataset: Multi-source photovol
 
 URL: 
 https://www.sciencedirect.com/science/article/pii/S0038092X21008070
-https://www.researchgate.net/publication/355389908_A_photovoltaic_power_output_dataset_Multi-source_photovoltaic_power_output_dataset_with_Python_toolkit
 
 **Dataset**: 
 
