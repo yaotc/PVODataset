@@ -75,4 +75,4 @@ MIT License.
 
 # Demo: Pearson correlation between features 
 
-![](./src/corr.pdf "Pearson correlation between features")
+![](./src/corr.png "Pearson correlation between features")
