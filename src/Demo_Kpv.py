@@ -109,7 +109,8 @@ class demo_K_PV(PVODataset):
         K_pv, pltac= [], []
         all_ac = np.array(mc.ac)
         for i in range(len(all_ac)):
-            ac_i = all_ac[i]/1e6*135 # 135 is an estimated value based on the installed capacity of the station and the arrangement of PV panels, and each station is different.
+            ac_i = all_ac[i] / 1e6 * 135
+            # 135 is an estimated value based on the installed capacity of the station and the arrangement of PV panels, and each station is different.
             pltac.append(ac_i)
             if ac_i <= 1:
                 K_pv.append(0)
