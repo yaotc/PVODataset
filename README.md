@@ -7,6 +7,15 @@ PVOD has total 271,968 records and is constructed from two data sources with a 1
 - NWP includes 7 features, i.e., global irradiance, direct irradiance, temperature, humidity, wind speed, wind direction, and pressure.
 - Local Measurements Data includes 7 features, i.e., global irradiance, diffuse irradiance, temperature, pressure, wind direction, wind speed, and photovoltaic output records.
 
+Note:
+
+- Before using the PVOD dataset, researchers should carefully read our dataset article [1].
+- Researchers should appropriately cite Reference [1] and ensure the dataset is used only for scientific research purposes.
+- For any further questions, please state your affiliation and name in the email, send it to yaotiechui17@mails.ucas.ac.cn, and cc wangjue@sccas.cn. Emails without indicating affiliation and full name, or without required carbon copy, will not receive a response.
+
+
+[1] Yao T, Wang J, Wu H, et al. A photovoltaic power output dataset: Multi-source photovoltaic power output dataset with Python toolkit[J]. Solar Energy, 2021, 230: 122-130.
+
 
 # Requirements
 
