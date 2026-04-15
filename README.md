@@ -70,11 +70,6 @@ URL:
 http://www.doi.org/10.11922/sciencedb.01094
 
 
-# Getting support
-
-If you have any questions relate to PVOD and code, please let us know. 
-
-Email: yaotiechui@gmail.com
 
 # License
 
